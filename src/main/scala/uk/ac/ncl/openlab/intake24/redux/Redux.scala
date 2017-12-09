@@ -1,4 +1,4 @@
-package uk.ac.ncl.openlab.intake24.js.redux
+package uk.ac.ncl.openlab.intake24.redux
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
@@ -7,7 +7,7 @@ trait Store extends js.Object {
 
   def getState(): js.Dynamic
 
-  def dispatch(action: js.Dynamic): js.Dynamic
+  def dispatch(action: js.Any): js.Any
 
   def subscribe(listener: js.Function): js.Function
 

@@ -1,4 +1,4 @@
-package uk.ac.ncl.openlab.intake24.js.api.auth
+package uk.ac.ncl.openlab.intake24.redux.api.auth
 
 case class AuthenticationState(
                                 refreshToken: Option[String] = None,

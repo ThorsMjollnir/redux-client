@@ -1,6 +1,4 @@
-package uk.ac.ncl.openlab.intake24.js.api.auth
-
-import uk.ac.ncl.openlab.intake24.js.redux.{Store, TopLevelSelector}
+package uk.ac.ncl.openlab.intake24.redux.api.auth
 
 import scala.scalajs.js
 import scala.scalajs.js.UndefOr
@@ -12,7 +10,7 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.scalajs.convertJsonToJs
-
+/*
 class AuthenticationSelector(topLevelSelector: TopLevelSelector) {
 
   def authState: AuthenticationState = topLevelSelector.appState.auth
@@ -28,3 +26,4 @@ class AuthenticationSelector(topLevelSelector: TopLevelSelector) {
   def shouldAttemptRefresh() = authState.accessToken.isEmpty && authState.refreshToken.nonEmpty
 
 }
+*/
