@@ -1,9 +1,13 @@
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 
 enablePlugins(ScalaJSPlugin)
 
-name := "intake24-js-client"
+name := "intake24-redux-client"
 
-version := "1.0.0"
+description := "Intake24 Redux interface for JavaScript platforms"
+
+version := "0.1.0"
 
 scalaVersion := "2.12.4"
 
@@ -13,31 +17,68 @@ scalaJSLinkerConfig ~= {
   _.withModuleKind(ModuleKind.CommonJSModule)
 }
 
-val npmPackageSrc = SettingKey[File]("npmPackageSrc", "Source directory for NPM package files")
+libraryDependencies += "uk.ac.ncl.openlab.intake24" %%% "api-client" % "1.0.0-SNAPSHOT"
 
-npmPackageSrc := baseDirectory.value / "src" / "main" / "npm"
-
-val npmPackageTarget = SettingKey[File]("npmPackageTarget", "Target directory for NPM package files")
-
-npmPackageTarget := target.value / "npm"
-
-val packageForNpm = TaskKey[Unit]("packageForNpm", "Copy NPM files")
+val packageForNpm = TaskKey[Unit]("packageForNpm", "Package final JavaScript as NPM module")
 
 packageForNpm := {
 
   val log = streams.value.log
   val jsFile = (fastOptJS in Compile).value.data
+  val jsFileName = jsFile.getName
 
-  log.info("Creating files for local NPM module...")
+  val _name = name.value
+  val _version = version.value
+  val _description = description.value
 
-  IO.copyDirectory(npmPackageSrc.value, npmPackageTarget.value, true)
-  IO.copyFile(jsFile, new java.io.File(npmPackageTarget.value, "index.js"), true)
+  log.info("Building NPM module...")
+
+  val npmTarget = target.value / "npm"
+
+  log.info("Writing package.json...")
+
+  val _package =
+    s"""{
+       |  "name": "${_name}",
+       |  "version": "${_version}",
+       |  "description": "${_description}",
+       |  "main": "${jsFileName}",
+       |  "scripts": {
+       |    "test": "echo \\"Error: no test specified\\" && exit 1"
+       |  },
+       |  "author": "Ivan Poliakov <ivan.poliakov@ncl.ac.uk>",
+       |  "license": "Apache-2.0",
+       |  "dependencies": {
+       |    "redux": "3.7.2"
+       |  }
+       |}
+       |""".stripMargin
+
+  IO.write(npmTarget / "package.json", _package, StandardCharsets.UTF_8)
+
+  log.info("Copying JavaScript...")
+
+  IO.copyFile(jsFile, npmTarget / jsFileName, CopyOptions(true, false, false))
+
+  log.info("Attempting to run 'npm install' (to enable local development)...")
+
+  // To resolve npm using PATH
+  val shellPrefix = if (System.getProperty("os.name").toLowerCase.contains("windows"))
+    Seq("cmd", "/C")
+  else
+    Seq()
+
+  val npmCommand = shellPrefix ++ Seq("npm", "install")
+
+  try {
+    val errCode = sys.process.Process(npmCommand, npmTarget).!
+    if (errCode != 0)
+      log.warn(s"'npm install' failed with error code $errCode")
+    else
+      log.info("'npm install' successful.")
+  } catch {
+    case e: IOException =>
+      log.warn("Unable to run 'npm install':")
+      log.warn(s"  ${e.getMessage}")
+  }
 }
-
-val circeVersion = "0.8.0"
-
-libraryDependencies ++= Seq(
-  "io.circe" %%% "circe-core",
-  "io.circe" %%% "circe-generic",
-  "io.circe" %%% "circe-parser"
-).map(_ % circeVersion)
