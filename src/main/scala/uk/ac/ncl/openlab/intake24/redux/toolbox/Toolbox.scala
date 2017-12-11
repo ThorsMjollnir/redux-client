@@ -25,7 +25,7 @@ class Toolbox(namespace: String) {
       if (previousState.isEmpty)
         ToolboxState()
       else
-        ToolboxActions.fromJs(action) match {
+        ToolboxActions.actionFromJs(action) match {
           case Some(action) => reducerImpl(previousState.get.asInstanceOf[ToolboxState], action)
           case None =>
             JSConsole.log("Ignored unrecognized message:", action)
@@ -53,7 +53,7 @@ class Toolbox(namespace: String) {
   def init(store: Store): ToolboxSelector = {
     val selector = new ToolboxSelector(store, namespace)
     store.subscribe(() => onStateChanged(store, selector.getState))
-    store.dispatch(ToolboxActions.toJs(Init))
+    store.dispatch(ToolboxActions.actionToJs(Init))
     selector
   }
 }
