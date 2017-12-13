@@ -13,19 +13,19 @@ case class ToolboxState(locales: LocalesState = LocalesState(),
                         searchQuery: Option[String] = None)
 
 @JSExportTopLevel("Toolbox")
-class Toolbox(namespace: String) {
+object Toolbox {
 
   @JSExport
-  val actions = ToolboxActions
+  val actions = ToolboxDispatcher
 
   @JSExport
-  def getReducer(): js.Function =
+  def createReducer(): js.Function =
     (previousState: UndefOr[js.Dynamic], action: js.Dynamic) =>
 
       if (previousState.isEmpty)
         ToolboxState()
       else
-        ToolboxActions.actionFromJs(action) match {
+        ToolboxDispatcher.actionFromJs(action) match {
           case Some(action) => reducerImpl(previousState.get.asInstanceOf[ToolboxState], action)
           case None =>
             JSConsole.log("Ignored unrecognized message:", action)
@@ -46,14 +46,14 @@ class Toolbox(namespace: String) {
     JSConsole.log("State changed!")
 
     if (state.locales.values.isEmpty && !state.locales.loading)
-      store.dispatch(ToolboxActions.reloadLocales())
+      store.dispatch(ToolboxDispatcher.reloadLocales())
   }
 
   @JSExport
-  def init(store: Store): ToolboxSelector = {
+  def init(store: Store, namespace: String): ToolboxSelector = {
     val selector = new ToolboxSelector(store, namespace)
     store.subscribe(() => onStateChanged(store, selector.getState))
-    store.dispatch(ToolboxActions.actionToJs(Init))
+    store.dispatch(ToolboxDispatcher.actionToJs(Init))
     selector
   }
 }
