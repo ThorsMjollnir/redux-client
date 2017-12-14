@@ -10,14 +10,14 @@ import uk.ac.ncl.openlab.intake24.api.client.{ApiError, JsonCodecs}
 import uk.ac.ncl.openlab.intake24.api.client.ApiError.NetworkError
 import uk.ac.ncl.openlab.intake24.api.client.services.RequestHandler
 import uk.ac.ncl.openlab.intake24.api.data.ErrorDescription
-import uk.ac.ncl.openlab.intake24.redux.auth.{AuthenticationDispatcher, AuthenticationSelector}
+import uk.ac.ncl.openlab.intake24.redux.auth.{AuthenticationStore, DeleteAccessToken, DeleteRefreshToken}
 
 import scala.concurrent.{Future, Promise}
 
-class RequestHandlerImpl(val apiBaseUrl: String, authSelector: AuthenticationSelector, authDispatcher: AuthenticationDispatcher)
+class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
   extends RequestHandler with JsonCodecs {
 
-  authSelector.subscribe {
+  authStore.subscribe {
     state =>
       state.accessToken.foreach {
         token =>
@@ -71,7 +71,7 @@ class RequestHandlerImpl(val apiBaseUrl: String, authSelector: AuthenticationSel
         sendWithAccessToken(retry).onComplete(promise.complete(_))
       })
 
-      authDispatcher.refreshAccessToken()
+      authStore.dispatch(DeleteAccessToken)
 
       promise.future
     case other =>
@@ -86,7 +86,7 @@ class RequestHandlerImpl(val apiBaseUrl: String, authSelector: AuthenticationSel
         sendWithRefreshToken(retry).onComplete(promise.complete(_))
       })
 
-      authDispatcher.refreshAccessToken()
+      authStore.dispatch(DeleteRefreshToken)
 
       promise.future
     case other => toApiError(other)
@@ -107,9 +107,9 @@ class RequestHandlerImpl(val apiBaseUrl: String, authSelector: AuthenticationSel
       .recoverWith(recover)
 
   def sendWithAccessToken[T](request: HttpRequest)(implicit decoder: Decoder[T]): Future[Either[ApiError, T]] =
-    sendWithAuthToken(request, authSelector.getState.accessToken, recoverRequestWithAccessToken(request))
+    sendWithAuthToken(request, authStore.getState.accessToken, recoverRequestWithAccessToken(request))
 
   def sendWithRefreshToken[T](request: HttpRequest)(implicit decoder: Decoder[T]): Future[Either[ApiError, T]] =
-    sendWithAuthToken(request, authSelector.getState.refreshToken, recoverRequestWithRefreshToken(request))
+    sendWithAuthToken(request, authStore.getState.refreshToken, recoverRequestWithRefreshToken(request))
 
 }

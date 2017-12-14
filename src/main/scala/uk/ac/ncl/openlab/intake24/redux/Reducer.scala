@@ -2,12 +2,17 @@ package uk.ac.ncl.openlab.intake24.redux
 
 import scala.scalajs.js
 import scala.scalajs.js.UndefOr
+import scala.scalajs.js.annotation.JSExport
 
-object ReducerUtils {
+trait Reducer[S, A] {
 
-  def createJsReducer[S, A](initialState: => S, reducerImpl: (S, A) => S): js.Function =
+  def initialState: S
+
+  def reducerImpl(previousState: S, action: A): S
+
+  @JSExport
+  def createReducer(): js.Function =
     (previousState: UndefOr[js.Dynamic], action: js.Dynamic) =>
-
       if (previousState.isEmpty)
         initialState
       else
