@@ -6,6 +6,7 @@ import fr.hmil.roshttp.HttpRequest
 import fr.hmil.roshttp.exceptions.HttpException
 import fr.hmil.roshttp.response.SimpleHttpResponse
 import io.circe.Decoder
+import io.circe.generic.auto._
 import uk.ac.ncl.openlab.intake24.api.client.{ApiError, JsonCodecs}
 import uk.ac.ncl.openlab.intake24.api.client.ApiError.NetworkError
 import uk.ac.ncl.openlab.intake24.api.client.services.RequestHandler
@@ -14,6 +15,8 @@ import uk.ac.ncl.openlab.intake24.redux.auth.{AuthenticationStore, DeleteAccessT
 
 import scala.concurrent.{Future, Promise}
 
+import monix.execution.Scheduler.Implicits.global
+
 class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
   extends RequestHandler with JsonCodecs {
 
@@ -21,19 +24,19 @@ class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
     state =>
       state.accessToken.foreach {
         token =>
-          accessRetryQueue.foreach(_ (token))
+          accessRetryQueue.foreach(_ ())
           accessRetryQueue = List()
       }
 
       state.refreshToken.foreach {
         token =>
-          refreshRetryQueue.foreach(_ (token))
+          refreshRetryQueue.foreach(_ ())
           refreshRetryQueue = List()
       }
   }
 
-  private var accessRetryQueue: List[String => Unit] = List()
-  private var refreshRetryQueue: List[String => Unit] = List()
+  private var accessRetryQueue: List[() => Unit] = List()
+  private var refreshRetryQueue: List[() => Unit] = List()
 
   lazy val apiBaseUrlNoSlash = apiBaseUrl.replaceAll("/+$", "")
 
@@ -62,13 +65,13 @@ class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
       Future.successful(Left(NetworkError(e)))
   }
 
-  private def recoverRequestWithAccessToken[T](retry: HttpRequest): PartialFunction[Throwable, Future[Either[ApiError, T]]] = {
+  private def recoverRequestWithAccessToken[T](retry: HttpRequest, bodyDecoder: Decoder[T]): PartialFunction[Throwable, Future[Either[ApiError, T]]] = {
     case HttpException(e: SimpleHttpResponse) if e.statusCode == 401 =>
 
       val promise = Promise[Either[ApiError, T]]()
 
-      accessRetryQueue +:= (token => {
-        sendWithAccessToken(retry).onComplete(promise.complete(_))
+      accessRetryQueue +:= (() => {
+        sendWithAccessToken(retry)(bodyDecoder).onComplete(promise.complete(_))
       })
 
       authStore.dispatch(DeleteAccessToken)
@@ -78,12 +81,13 @@ class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
       toApiError(other)
   }
 
-  private def recoverRequestWithRefreshToken[T](retry: HttpRequest): PartialFunction[Throwable, Future[Either[ApiError, T]]] = {
+  private def recoverRequestWithRefreshToken[T](retry: HttpRequest, bodyDecoder: Decoder[T]): PartialFunction[Throwable, Future[Either[ApiError, T]]] = {
     case HttpException(e: SimpleHttpResponse) if e.statusCode == 401 =>
       val promise = Promise[Either[ApiError, T]]()
 
-      accessRetryQueue +:= (token => {
-        sendWithRefreshToken(retry).onComplete(promise.complete(_))
+
+      refreshRetryQueue +:= (() => {
+        sendWithRefreshToken(retry)(bodyDecoder).onComplete(promise.complete(_))
       })
 
       authStore.dispatch(DeleteRefreshToken)
@@ -99,7 +103,7 @@ class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
       .recoverWith(toApiError)
 
   private def sendWithAuthToken[T](request: HttpRequest, authToken: Option[String],
-                                   recover: PartialFunction[Throwable, Future[Either[ApiError, T]]]) =
+                                   recover: PartialFunction[Throwable, Future[Either[ApiError, T]]])(implicit decoder: Decoder[T]) =
     authToken.map(t => request.withHeader("X-Auth-Token", t)).getOrElse(request)
       .withURL(getUrl(request.url))
       .send()
@@ -107,9 +111,9 @@ class RequestHandlerImpl(val apiBaseUrl: String, authStore: AuthenticationStore)
       .recoverWith(recover)
 
   def sendWithAccessToken[T](request: HttpRequest)(implicit decoder: Decoder[T]): Future[Either[ApiError, T]] =
-    sendWithAuthToken(request, authStore.getState.accessToken, recoverRequestWithAccessToken(request))
+    sendWithAuthToken(request, authStore.getState.accessToken, recoverRequestWithAccessToken(request, decoder))
 
   def sendWithRefreshToken[T](request: HttpRequest)(implicit decoder: Decoder[T]): Future[Either[ApiError, T]] =
-    sendWithAuthToken(request, authStore.getState.refreshToken, recoverRequestWithRefreshToken(request))
+    sendWithAuthToken(request, authStore.getState.refreshToken, recoverRequestWithRefreshToken(request, decoder))
 
 }

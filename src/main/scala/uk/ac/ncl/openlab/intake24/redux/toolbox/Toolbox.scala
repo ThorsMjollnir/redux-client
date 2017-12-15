@@ -1,12 +1,14 @@
 package uk.ac.ncl.openlab.intake24.redux.toolbox
 
 import uk.ac.ncl.openlab.intake24.api.client.roshttp.common.SigninImpl
-import uk.ac.ncl.openlab.intake24.redux.auth.{AuthenticationReducer, AuthenticationStore}
-import uk.ac.ncl.openlab.intake24.redux.{Redux, RequestHandlerImpl, Store}
+import uk.ac.ncl.openlab.intake24.redux.auth.{AuthenticationLogic, AuthenticationReducer, AuthenticationStore}
+import uk.ac.ncl.openlab.intake24.redux.{Redux, Store}
 
 import scala.scalajs.js
 import scala.scalajs.js.Dictionary
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+
+import io.circe.generic.auto._
 
 @JSExportTopLevel("Toolbox")
 object Toolbox {
@@ -19,12 +21,17 @@ object Toolbox {
   }
 
   @JSExport
-  def init(apiBaseUrl: String, reduxStore: Store, namespace: String) = {
+  var authStore: AuthenticationStore = null
 
-    val authStore = new AuthenticationStore(reduxStore, Seq(namespace, "auth"))
+  @JSExport
+  def init(apiBaseUrl: String, reduxStore: Store, namespace: String): ToolboxStore = {
 
-    val requestHandler = new RequestHandlerImpl(apiBaseUrl, authStore)
+    authStore = new AuthenticationStore(reduxStore, Seq(namespace, "auth"))
 
-    val signinService = new SigninImpl(requestHandler)
+    val signinService = new SigninImpl(apiBaseUrl)
+
+    AuthenticationLogic.init(authStore, signinService)
+
+    new ToolboxStore(reduxStore, Seq(namespace))
   }
 }

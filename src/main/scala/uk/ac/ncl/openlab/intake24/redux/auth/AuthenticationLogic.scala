@@ -1,42 +1,22 @@
 package uk.ac.ncl.openlab.intake24.redux.auth
 
-import uk.ac.ncl.openlab.intake24.api.client.ApiError
-import uk.ac.ncl.openlab.intake24.api.client.ApiError.{HttpError, NetworkError}
 import uk.ac.ncl.openlab.intake24.api.client.services.common.AuthService
-import uk.ac.ncl.openlab.intake24.redux.LogicUtils
+import uk.ac.ncl.openlab.intake24.redux.ApiUtils
 
-import scala.util.{Failure, Success}
-
-object AuthenticationLogic extends LogicUtils {
+object AuthenticationLogic extends ApiUtils {
 
   var authService: AuthService = null
   var store: AuthenticationStore = null
 
-  def onStateChanged(authenticationState: AuthenticationState): Unit = {
+  def onStateChanged(s: AuthenticationState): Unit = {
 
+    if (s.signinClicked && !s.signinRequestSent) {
+      handleApiResult(authService.signin(s.credentials))(
+        result => store.dispatch(SigninSuccessful(result.refreshToken)),
+        errorMessage => store.dispatch(SigninFailed(errorMessage)))
 
-    authenticationState.credentials match {
-      case Some(credentials) =>
-        handleApiResult(authService.signin(credentials), r => store.dispatch(SetRefreshToken(r.refreshToken))
-
-          .onComplete(handleApiResult())
-          case Success(Right(signinResult)) =>
-
-          case Success(Left(NetworkError(throwable))) =>
-            store.dispatch(SetError(throwable.getMessage))
-          case Success(Left(HttpError(_, Some(errorDescription)))) =>
-            store.dispatch(SetError(errorDescription.errorMessage))
-          case Success(Left(HttpError(httpCode, None))) =>
-            store.dispatch(SetError(s"HTTP error: $httpCode"))
-          case Failure(throwable) =>
-            store.dispatch(SetError(s"Unexpected error: " + throwable.getMessage))
-        }
-
-        store.dispatch(DeleteCredentials)
+      store.dispatch(SigninRequestSent)
     }
-
-
-
   }
 
   def init(store: AuthenticationStore, authService: AuthService): Unit = {

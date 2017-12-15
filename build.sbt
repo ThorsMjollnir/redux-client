@@ -9,7 +9,7 @@ description := "Intake24 Redux interface for JavaScript platforms"
 
 version := "0.1.0"
 
-scalaVersion := "2.12.4"
+//scalaVersion := "2.12.4"
 
 scalacOptions += "-P:scalajs:sjsDefinedByDefault"
 
