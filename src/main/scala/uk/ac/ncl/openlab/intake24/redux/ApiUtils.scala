@@ -4,17 +4,25 @@ import uk.ac.ncl.openlab.intake24.api.client.ApiError
 import uk.ac.ncl.openlab.intake24.api.client.ApiError.{HttpError, NetworkError}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 import monix.execution.Scheduler.Implicits.global
 
 trait ApiUtils {
 
-  def handleApiResult[T](result: Future[Either[ApiError, T]])(onSuccess: T => Unit, onError: String => Unit) = result.onComplete {
-    case Success(Right(value)) => onSuccess(value)
-    case Success(Left(NetworkError(throwable))) => onError(throwable.getMessage)
-    case Success(Left(HttpError(_, Some(errorDescription)))) => onError(errorDescription.errorMessage)
-    case Success(Left(HttpError(httpCode, None))) => onError(s"HTTP error: $httpCode")
-    case Failure(throwable) => onError(s"Unexpected error: " + throwable.getMessage)
+  def onComplete[T](result: Future[Either[ApiError, T]])(f: Either[String, T] => Unit) = result.onComplete {
+    result =>
+
+      val simpleResult = result match {
+        case Success(result) =>
+          result.left.map {
+            case NetworkError(throwable) => throwable.getMessage
+            case HttpError(_, Some(errorDescription)) => errorDescription.errorMessage
+            case HttpError(httpCode, None) => s"HTTP error: $httpCode"
+          }
+        case Failure(throwable) => Left(s"Unexpected error: " + throwable.getMessage)
+      }
+
+      f(simpleResult)
   }
 }
