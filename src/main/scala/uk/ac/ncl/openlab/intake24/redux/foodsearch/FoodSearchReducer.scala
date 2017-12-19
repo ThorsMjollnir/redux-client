@@ -1,10 +1,12 @@
 package uk.ac.ncl.openlab.intake24.redux.foodsearch
 
 import uk.ac.ncl.openlab.intake24.api.data.LookupResult
-import uk.ac.ncl.openlab.intake24.redux.{Macros, Reducer}
+import uk.ac.ncl.openlab.intake24.redux.{macros, Reducer}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
+import io.circe.generic.auto._
+import uk.ac.ncl.openlab.intake24.redux.macros._
 
 case class FoodSearchState(query: String, searchPending: Boolean, result: LookupResult, errors: Seq[String])
 
@@ -23,6 +25,4 @@ object FoodSearchReducer extends Reducer[FoodSearchState, FoodSearchAction] {
     case FoodSearchFailed(errorMessage) =>
       previousState.copy(errors = errorMessage +: previousState.errors)
   }
-
-  def actionFromJs(action: js.Dynamic): Option[FoodSearchAction] = Macros.actionFromJs[FoodSearchAction](action)
 }

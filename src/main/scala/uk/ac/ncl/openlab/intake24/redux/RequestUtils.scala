@@ -12,7 +12,7 @@ import uk.ac.ncl.openlab.intake24.api.client.ApiError.NetworkError
 import uk.ac.ncl.openlab.intake24.api.client.services.AuthRequestHandler
 import uk.ac.ncl.openlab.intake24.api.client.{ApiError, JsonCodecs}
 import uk.ac.ncl.openlab.intake24.api.data.ErrorDescription
-import uk.ac.ncl.openlab.intake24.redux.auth.{DeleteAccessToken, DeleteRefreshToken}
+import uk.ac.ncl.openlab.intake24.redux.api.{DeleteAccessToken, DeleteRefreshToken}
 
 import scala.concurrent.{Future, Promise}
 

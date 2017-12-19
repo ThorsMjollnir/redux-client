@@ -9,9 +9,15 @@ description := "Intake24 Redux interface for JavaScript platforms"
 
 version := "0.1.0"
 
-//scalaVersion := "2.12.4"
+scalaVersion := "2.12.4"
 
-scalacOptions += "-P:scalajs:sjsDefinedByDefault"
+scalacOptions ++= Seq("-P:scalajs:sjsDefinedByDefault")
+
+// scalacOptions += "-Ymacro-debug-lite"
+
+resolvers += Resolver.sonatypeRepo("releases")
+
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
 scalaJSLinkerConfig ~= {
   _.withModuleKind(ModuleKind.CommonJSModule)
@@ -46,6 +52,7 @@ packageForNpm := {
        |  "version": "${_version}",
        |  "description": "${_description}",
        |  "main": "${jsFileName}",
+       |  "types": "intake24-redux-client.d.ts",
        |  "scripts": {
        |    "test": "echo \\"Error: no test specified\\" && exit 1"
        |  },
@@ -62,6 +69,13 @@ packageForNpm := {
   log.info("Copying JavaScript...")
 
   IO.copyFile(jsFile, npmTarget / jsFileName, CopyOptions(true, false, false))
+
+  log.info("Copying TypeScript definitions...")
+
+  val dtsFileName = "intake24-redux-client.d.ts"
+  val dtsFile = sourceDirectory.value / "main" / "typescript" / dtsFileName
+
+  IO.copyFile(dtsFile, npmTarget / dtsFileName, CopyOptions(true, false, false))
 
   log.info("Attempting to run 'npm install' (to enable local development)...")
 

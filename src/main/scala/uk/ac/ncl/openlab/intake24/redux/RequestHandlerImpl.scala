@@ -15,9 +15,9 @@ import uk.ac.ncl.openlab.intake24.api.data.ErrorDescription
 
 import scala.concurrent.Future
 
-class RequestHandlerImpl(val apiBaseUrl: String) extends RequestHandler with JsonCodecs {
+class RequestHandlerImpl(apiBaseUrl: () => String) extends RequestHandler with JsonCodecs {
 
-  lazy val apiBaseUrlNoSlash = apiBaseUrl.replaceAll("/+$", "")
+  private def apiBaseUrlNoSlash = apiBaseUrl().replaceAll("/+$", "")
 
   private def getUrl(endpoint: String) = apiBaseUrlNoSlash + "/" + endpoint.replaceAll("^/", "")
 

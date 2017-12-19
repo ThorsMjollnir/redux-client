@@ -1,11 +1,10 @@
 package uk.ac.ncl.openlab.intake24.redux
 
 import uk.ac.ncl.openlab.intake24.api.client.ApiError
-import uk.ac.ncl.openlab.intake24.api.client.ApiError.{HttpError, NetworkError}
+import uk.ac.ncl.openlab.intake24.api.client.ApiError.{HttpError, NetworkError, ResultParseFailed}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
 import monix.execution.Scheduler.Implicits.global
 
 trait ApiUtils {
@@ -19,6 +18,7 @@ trait ApiUtils {
             case NetworkError(throwable) => throwable.getMessage
             case HttpError(_, Some(errorDescription)) => errorDescription.errorMessage
             case HttpError(httpCode, None) => s"HTTP error: $httpCode"
+            case ResultParseFailed(throwable) => s"Failed to parse JSON response: ${throwable.getMessage}"
           }
         case Failure(throwable) => Left(s"Unexpected error: " + throwable.getMessage)
       }
