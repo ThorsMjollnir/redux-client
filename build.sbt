@@ -25,7 +25,6 @@ scalaJSLinkerConfig ~= {
 
 libraryDependencies ++= Seq(
   "uk.ac.ncl.openlab.intake24" %%% "api-client" % "1.0.0-SNAPSHOT",
-  "uk.ac.ncl.openlab.intake24" %%% "scalajs-redux" % "1.0.0-SNAPSHOT"
 )
 
 val packageForNpm = TaskKey[Unit]("packageForNpm", "Package final JavaScript as NPM module")

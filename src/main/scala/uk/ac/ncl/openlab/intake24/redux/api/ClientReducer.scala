@@ -6,7 +6,6 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
 import io.circe.generic.auto._
-import uk.ac.ncl.openlab.intake24.redux.macros._
 
 case class ClientState(apiBaseUrl: Option[String],
                        refreshToken: Option[String],

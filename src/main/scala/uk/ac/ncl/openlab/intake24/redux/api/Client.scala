@@ -1,7 +1,6 @@
 package uk.ac.ncl.openlab.intake24.redux.api
 
 import io.circe.generic.auto._
-import uk.ac.ncl.openlab.intake24.redux.macros._
 
 import uk.ac.ncl.openlab.intake24.api.client.roshttp.common.SigninImpl
 import uk.ac.ncl.openlab.intake24.api.data.{EmailCredentials, RefreshResult}
