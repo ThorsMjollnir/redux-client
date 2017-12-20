@@ -23,7 +23,7 @@ object ClientReducer extends Reducer[ClientState, ClientAction] {
   val initialState: ClientState = ClientState(None, None, None, false, Seq())
 
   def reducerImpl(previousState: ClientState, action: ClientAction): ClientState = action match {
-    case Init(apiBaseUrl: String) =>
+    case SetApiBaseUrl(apiBaseUrl: String) =>
       previousState.copy(apiBaseUrl = Some(apiBaseUrl))
 
     case SigninSuccessful(refreshToken) =>

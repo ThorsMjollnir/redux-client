@@ -8,7 +8,7 @@ case object DeleteAccessToken extends ClientAction
 
 case object SigninPending extends ClientAction
 
-case class Init(apiBaseUrl: String) extends ClientAction
+case class SetApiBaseUrl(apiBaseUrl: String) extends ClientAction
 
 case class SigninSuccessful(refreshToken: String) extends ClientAction
 

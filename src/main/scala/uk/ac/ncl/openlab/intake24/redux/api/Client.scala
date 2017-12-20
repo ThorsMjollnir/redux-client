@@ -32,7 +32,7 @@ class Client(val reduxStore: Store, protected val selector: js.Array[String]) ex
   }
 
   @JSExport
-  def init(apiBaseUrl: String) = dispatch(Init(apiBaseUrl))
+  def setApiBaseUrl(apiBaseUrl: String) = dispatch(SetApiBaseUrl(apiBaseUrl))
 
   @JSExport
   def setRefreshToken(token: String) = {

@@ -3,7 +3,7 @@ import {Store} from "redux";
 export class Client {
     constructor(reduxStore: Store<any>, stateSelector: string[]);
 
-    init(apiBaseUrl: string);
+    setApiBaseUrl(apiBaseUrl: string);
 
     setRefreshToken(token: string);
 
