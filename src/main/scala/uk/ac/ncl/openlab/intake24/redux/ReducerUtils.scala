@@ -32,9 +32,9 @@ object ReducerUtils {
       }
   }
 
-  def createUnionReducer(reducers: Seq[Reducer[_, _]]) = {
+  def createUnionReducer(reducers: Seq[Reducer[_, _]]): js.Function = {
     val map = reducers.foldLeft(Map[String, js.Function]()) {
-      (map, reducer) => map + (reducer.getClass.getSimpleName -> reducer.create())
+      (map, reducer) => map + (reducer.typeName -> reducer.create())
     }
     createUnionReducerImpl(map)
   }

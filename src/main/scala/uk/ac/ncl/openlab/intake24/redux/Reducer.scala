@@ -1,6 +1,7 @@
 package uk.ac.ncl.openlab.intake24.redux
 
 import io.circe._
+import io.circe.syntax._
 import io.circe.scalajs._
 
 import scala.scalajs.js
@@ -11,9 +12,15 @@ abstract class Reducer[S, A](implicit stateDecoder: Decoder[S], stateEncoder: En
 
   val actionTypePrefix = "intake24."
 
+  val typeName = getClass.getSimpleName.replace("Reducer", "")
+
   def initialState: S
 
   def reducerImpl(previousState: S, action: A): S
+
+  val initialStateJson = initialState.asJson
+
+  val initialStateJS = convertJsonToJs(initialStateJson)
 
   def decodeReduxAction(action: js.Any): Option[A] = {
     val json = convertJsToJson(action).toOption.flatMap(_.asObject).getOrElse {
@@ -36,7 +43,7 @@ abstract class Reducer[S, A](implicit stateDecoder: Decoder[S], stateEncoder: En
   def create(): js.Function =
     (previousState: UndefOr[js.Any], action: js.Any) =>
       if (previousState.isEmpty)
-        initialState.asJsAny
+        initialStateJS
       else
         decodeReduxAction(action) match {
           case Some(scalaAction) =>
