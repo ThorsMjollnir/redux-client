@@ -15,25 +15,9 @@ abstract class ModuleStore[S, A](implicit actionEncoder: Encoder[A], stateDecode
 
   protected val selector: js.Array[String]
 
-  protected def encodeForRedux(action: A): js.Any = {
-    val encodedAction = action.asJson.asObject.get
+  protected val reduxActionEncoder = new ReduxSumTypeEncoder[A](Reducer.actionTypePrefix)
 
-    if (encodedAction.fields.size != 1) {
-      throw new IllegalArgumentException("Unexpected encoded action format, expected a " +
-        "JSON object with exactly one field for case class name")
-    } else {
-      val typeName = encodedAction.fields.head
-      val payload = encodedAction(typeName).flatMap(_.asObject).get
-
-      val actionInReduxFormat = payload.toVector.foldLeft(JsonObject.singleton("type", Json.fromString(actionTypePrefix + typeName))) {
-        case (obj, (k, v)) => obj.add(k, v)
-      }
-
-      convertJsonToJs(Json.fromJsonObject(actionInReduxFormat))
-    }
-  }
-
-  protected def dispatch(action: A) = reduxStore.dispatch(encodeForRedux(action))
+  protected def dispatch(action: A) = reduxStore.dispatch(action.asJsAny(reduxActionEncoder))
 
   @JSExport
   def getState() = selector.foldLeft(reduxStore.getState()) {

@@ -1,21 +1,31 @@
 package uk.ac.ncl.openlab.intake24.redux.apps
 
-import io.circe.{Json, JsonObject}
-import uk.ac.ncl.openlab.intake24.api.data.LookupResult
-import uk.ac.ncl.openlab.intake24.redux.{Reducer, ReducerUtils}
-
-import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExportTopLevel
+import io.circe.Encoder
 import io.circe.generic.auto._
 import io.circe.scalajs._
-import uk.ac.ncl.openlab.intake24.redux.foodsearch.FoodSearchReducer
+import uk.ac.ncl.openlab.intake24.api.data.UserFoodHeader
+import uk.ac.ncl.openlab.intake24.redux.{Reducer, ReduxSumTypeDecoder, ReduxSumTypeEncoder}
+import uk.ac.ncl.openlab.intake24.redux.foodsearch.{FoodSearchReducer, FoodSearchState}
 
+import scala.scalajs.js
 import scala.scalajs.js.UndefOr
+import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+
+
+sealed trait FNCPrompt
+
+case class FoodSearchPrompt(state: FoodSearchState) extends FNCPrompt
+
+case class FNCState(selectedFood: Option[UserFoodHeader] = None, currentPrompt: FNCPrompt)
 
 @JSExportTopLevel("FNCReducer")
-object FNCReducer extends Reducer[FNCState, FNCAction] {
+object FNCReducer {
 
-  val initialState: FNCState = FNCState(None)
+  val initialState: FNCState = FNCState(None, FoodSearchPrompt(FoodSearchReducer.initialState))
+
+  implicit val currentPromptEncoder: Encoder[FNCPrompt] = new ReduxSumTypeEncoder[FNCPrompt]()
+
+  val actionDecoder = new ReduxSumTypeDecoder[FNCAction]()
 
   def reducerImpl(previousState: FNCState, action: FNCAction): FNCState = action match {
     case Whatever => previousState
@@ -28,35 +38,34 @@ object FNCReducer extends Reducer[FNCState, FNCAction] {
       None
   }
 
-  val promptReducer = ReducerUtils.createUnionReducer(Seq(FoodSearchReducer))
-
-  override def create(): js.Function = {
+  @JSExport
+  def create(): js.Function =
     (previousState: UndefOr[js.Any], action: js.Any) =>
-      if (previousState.isEmpty) {
+      if (previousState.isEmpty)
+        initialState.asJsAny
+      else {
 
-        nextPrompt(initialState) match {
-          case Some(initialPrompt) =>
+        js.Dynamic.global.console.log(action)
 
-            val promptState =
-              JsonObject
-                .singleton("type", Json.fromString(initialPrompt.typeName))
-                .add("state", initialPrompt.initialStateJson)
+        val scalaState = decodeJs[FNCState](previousState.get).right.get
 
-            initialStateJson.asObject.get.add("currentPrompt", Json.fromJsonObject(promptState))
-
-          case None => throw new RuntimeException("No prompt avaiable for initial state")
+        val newPromptState = scalaState.currentPrompt match {
+          case FoodSearchPrompt(state) =>
+            decodeJs(action)(FoodSearchReducer.reduxActionDecoder)
+              .toOption
+              .map(FoodSearchReducer.reducerImpl(state, _))
+              .getOrElse(state)
         }
 
+        val withNewPromptState = scalaState.copy(currentPrompt = FoodSearchPrompt(newPromptState))
 
+        val newFncState = decodeJs(action)(actionDecoder).toOption match {
+          case Some(fncAction) =>
+            reducerImpl(withNewPromptState, fncAction)
+          case None =>
+            withNewPromptState
+        }
+
+        newFncState.asJsAny
       }
-
-      else
-        decodeReduxAction(action) match {
-          case Some(scalaAction) =>
-            val scalaState = decodeJs[S](previousState.get).right.get
-            reducerImpl(scalaState, scalaAction).asJsAny
-          case None => previousState
-        }
-  }
-
 }

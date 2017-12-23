@@ -10,45 +10,30 @@ import scala.scalajs.js.annotation.JSExport
 
 abstract class Reducer[S, A](implicit stateDecoder: Decoder[S], stateEncoder: Encoder[S], actionDecoder: Decoder[A]) {
 
-  val actionTypePrefix = "intake24."
-
-  val typeName = getClass.getSimpleName.replace("Reducer", "")
-
   def initialState: S
 
   def reducerImpl(previousState: S, action: A): S
 
-  val initialStateJson = initialState.asJson
+  val reduxActionDecoder = new ReduxSumTypeDecoder[A](Reducer.actionTypePrefix)
 
-  val initialStateJS = convertJsonToJs(initialStateJson)
-
-  def decodeReduxAction(action: js.Any): Option[A] = {
-    val json = convertJsToJson(action).toOption.flatMap(_.asObject).getOrElse {
-      throw new RuntimeException("Action must be a JSON object")
-    }
-
-    val typeName = json("type").flatMap(_.asString).getOrElse {
-      throw new RuntimeException("Action must have a string 'type' field")
-    }
-
-    if (typeName.startsWith(actionTypePrefix)) {
-      val payload = json.filterKeys(_ != "type")
-      val actionInCirceFormat = Json.fromJsonObject(JsonObject.singleton(typeName.substring(actionTypePrefix.length), Json.fromJsonObject(payload)))
-      actionInCirceFormat.as[A].toOption
-    } else
-      None
-  }
+  def decodeJsAction(action: js.Any): Either[Throwable, A] =
+    decodeJs(action)(reduxActionDecoder)
 
   @JSExport
   def create(): js.Function =
     (previousState: UndefOr[js.Any], action: js.Any) =>
       if (previousState.isEmpty)
-        initialStateJS
+        initialState.asJsAny
       else
-        decodeReduxAction(action) match {
-          case Some(scalaAction) =>
+        decodeJs[A](action)(reduxActionDecoder) match {
+          case Right(scalaAction) =>
             val scalaState = decodeJs[S](previousState.get).right.get
             reducerImpl(scalaState, scalaAction).asJsAny
-          case None => previousState
+          case Left(_) =>
+            previousState
         }
+}
+
+object Reducer {
+  val actionTypePrefix = "intake24."
 }

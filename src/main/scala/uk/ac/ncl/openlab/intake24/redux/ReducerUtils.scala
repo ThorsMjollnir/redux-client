@@ -1,41 +1,76 @@
 package uk.ac.ncl.openlab.intake24.redux
 
-import scala.scalajs.js
-import scala.scalajs.js.UndefOr
+import io.circe.Decoder.Result
+import io.circe._
 
-object ReducerUtils {
+object ReduxSumType {
+  val typeKey = "type"
+}
 
-  private def createUnionReducerImpl(reducers: Map[String, js.Function]): js.Function = {
-    (previousState: UndefOr[js.Dynamic], action: js.Any) =>
-      if (previousState.isEmpty)
-        null
-      else {
-        val state = previousState.get
-        if (state == null)
-          previousState
-        else {
-          val typeName = state.selectDynamic("type").toString
-          val wrappedState = state.selectDynamic("state")
+class ReduxSumTypeDecoder[T](val typePrefix: String = "")(implicit val wrappedDecoder: Decoder[T]) extends Decoder[T] {
 
-          reducers.get(typeName) match {
-            case Some(function) =>
-              val newWrappedState = function.call(null, wrappedState, action)
-              if (newWrappedState != wrappedState)
-                js.Dynamic.literal(`type` = typeName, state = newWrappedState)
-              else
-                previousState
+  def convertToCirce(json: Json): Option[Json] = {
 
-            case None =>
-              throw new RuntimeException("Unexpected type in union reducer: " + typeName)
-          }
-        }
-      }
+    /*
+    Transform incoming JSON from
+
+    {
+      "type": "TypeName", "field1": ... "field2": ... }
+    }
+
+    to
+
+    {
+      "TypeName" : { "field1": ... "field2": ... }
+    }
+    */
+
+    val cursor = json.hcursor
+
+    for (
+      typeName <- cursor.get[String](ReduxSumType.typeKey).toOption;
+      wrappedFields <- cursor.downField(ReduxSumType.typeKey).delete.focus
+    ) yield
+      Json.fromJsonObject(JsonObject.singleton(typeName.substring(typePrefix.length), wrappedFields))
   }
 
-  def createUnionReducer(reducers: Seq[Reducer[_, _]]): js.Function = {
-    val map = reducers.foldLeft(Map[String, js.Function]()) {
-      (map, reducer) => map + (reducer.typeName -> reducer.create())
+  override def apply(c: HCursor): Result[T] = {
+    val cursor = for (json <- c.focus;
+                      converted <- convertToCirce(json))
+      yield converted.hcursor
+
+    cursor match {
+      case None => Left(DecodingFailure("Sum type object is not in the expected format", c.history))
+      case Some(cursor) => wrappedDecoder(cursor)
     }
-    createUnionReducerImpl(map)
+  }
+}
+
+class ReduxSumTypeEncoder[T](typePrefix: String = "")(implicit val wrappedEncoder: Encoder[T]) extends Encoder[T] {
+
+  def convertToRedux(json: Json): Json = {
+    /*
+    Transform incoming JSON from
+
+    {
+      "TypeName" : { "field1": ... "field2": ... }
+    }
+
+    to
+
+    {
+      "type": "TypeName", "field1": ... "field2": ... }
+    }
+    */
+
+    val rootObject = json.asObject.get
+
+    val (typeName, wrappedObject) = rootObject.toList.head
+
+    Json.fromJsonObject((ReduxSumType.typeKey -> Json.fromString(typePrefix + typeName)) +: wrappedObject.asObject.get)
+  }
+
+  override def apply(a: T): Json = {
+    convertToRedux(wrappedEncoder(a))
   }
 }

@@ -38,7 +38,7 @@ object ClientReducer extends Reducer[ClientState, ClientAction] {
       previousState.copy(accessToken = Some(accessToken))
 
     case RefreshFailed(errorMessage) =>
-      previousState.copy(accessToken = None, errors = errorMessage +: previousState.errors)
+      previousState.copy(accessToken = None, refreshToken = None)
 
     case SetRefreshToken(refreshToken) =>
       previousState.copy(refreshToken = Some(refreshToken))
