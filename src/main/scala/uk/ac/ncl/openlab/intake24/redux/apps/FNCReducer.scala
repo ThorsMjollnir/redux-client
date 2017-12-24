@@ -1,7 +1,6 @@
 package uk.ac.ncl.openlab.intake24.redux.apps
 
-import io.circe.Encoder
-import io.circe.generic.auto._
+import io.circe.{Decoder, Encoder}
 import io.circe.scalajs._
 import uk.ac.ncl.openlab.intake24.api.data.UserFoodHeader
 import uk.ac.ncl.openlab.intake24.redux.{Reducer, ReduxSumTypeDecoder, ReduxSumTypeEncoder}
@@ -10,6 +9,7 @@ import uk.ac.ncl.openlab.intake24.redux.foodsearch.{FoodSearchReducer, FoodSearc
 import scala.scalajs.js
 import scala.scalajs.js.UndefOr
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+import io.circe.generic.auto._
 
 
 sealed trait FNCPrompt
@@ -23,9 +23,10 @@ object FNCReducer {
 
   val initialState: FNCState = FNCState(None, FoodSearchPrompt(FoodSearchReducer.initialState))
 
-  implicit val currentPromptEncoder: Encoder[FNCPrompt] = new ReduxSumTypeEncoder[FNCPrompt]()
+  implicit val currentPromptEncoder: Encoder[FNCPrompt] = new ReduxSumTypeEncoder[FNCPrompt]()(exportEncoder[FNCPrompt].instance)
+  implicit val currentPromptDecoder: Decoder[FNCPrompt] = new ReduxSumTypeDecoder[FNCPrompt]()(exportDecoder[FNCPrompt].instance)
 
-  val actionDecoder = new ReduxSumTypeDecoder[FNCAction]()
+  implicit val actionDecoder = new ReduxSumTypeDecoder[FNCAction]()
 
   def reducerImpl(previousState: FNCState, action: FNCAction): FNCState = action match {
     case Whatever => previousState
@@ -44,9 +45,6 @@ object FNCReducer {
       if (previousState.isEmpty)
         initialState.asJsAny
       else {
-
-        js.Dynamic.global.console.log(action)
-
         val scalaState = decodeJs[FNCState](previousState.get).right.get
 
         val newPromptState = scalaState.currentPrompt match {

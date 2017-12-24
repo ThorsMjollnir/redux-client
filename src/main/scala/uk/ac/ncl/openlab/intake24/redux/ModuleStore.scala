@@ -20,8 +20,14 @@ abstract class ModuleStore[S, A](implicit actionEncoder: Encoder[A], stateDecode
   protected def dispatch(action: A) = reduxStore.dispatch(action.asJsAny(reduxActionEncoder))
 
   @JSExport
-  def getState() = selector.foldLeft(reduxStore.getState()) {
-    (obj, path) => obj.selectDynamic(path)
+  def getState() = {
+
+    js.Dynamic.global.console.warn(reduxStore.getState())
+    js.Dynamic.global.console.warn(selector)
+
+    selector.foldLeft(reduxStore.getState()) {
+      (obj, path) => obj.selectDynamic(path)
+    }
   }
 
   def getScalaState() = decodeJs[S](getState()).right.get
