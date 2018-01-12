@@ -10,6 +10,7 @@ import scala.scalajs.js
 import scala.scalajs.js.UndefOr
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import io.circe.generic.auto._
+import shapeless._
 
 
 sealed trait FNCPrompt
@@ -23,10 +24,10 @@ object FNCReducer {
 
   val initialState: FNCState = FNCState(None, FoodSearchPrompt(FoodSearchReducer.initialState))
 
-  implicit val currentPromptEncoder: Encoder[FNCPrompt] = new ReduxSumTypeEncoder[FNCPrompt]()(exportEncoder[FNCPrompt].instance)
-  implicit val currentPromptDecoder: Decoder[FNCPrompt] = new ReduxSumTypeDecoder[FNCPrompt]()(exportDecoder[FNCPrompt].instance)
+  implicit val currentPromptEncoder: Encoder[FNCPrompt] = new ReduxSumTypeEncoder[FNCPrompt]()(cachedImplicit)
+  implicit val currentPromptDecoder: Decoder[FNCPrompt] = new ReduxSumTypeDecoder[FNCPrompt]()(cachedImplicit)
 
-  implicit val actionDecoder = new ReduxSumTypeDecoder[FNCAction]()
+  implicit val actionDecoder = new ReduxSumTypeDecoder[FNCAction](Reducer.actionTypePrefix)
 
   def reducerImpl(previousState: FNCState, action: FNCAction): FNCState = action match {
     case Whatever => previousState
