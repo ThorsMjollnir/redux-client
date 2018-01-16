@@ -19,6 +19,8 @@ abstract class Reducer[S, A](implicit stateDecoder: Decoder[S], stateEncoder: En
   def decodeJsAction(action: js.Any): Either[Throwable, A] =
     decodeJs(action)(reduxActionDecoder)
 
+  def applyToJsAction(state: S, action: js.Any): Option[S] = decodeJsAction(action).toOption.map(reducerImpl(state, _))
+
   @JSExport
   def create(): js.Function =
     (previousState: UndefOr[js.Any], action: js.Any) =>

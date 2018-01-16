@@ -12,7 +12,6 @@ import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import io.circe.generic.auto._
 import shapeless._
 
-
 sealed trait FNCPrompt
 
 case class FoodSearchPrompt(state: FoodSearchState) extends FNCPrompt
@@ -48,15 +47,24 @@ object FNCReducer {
       else {
         val scalaState = decodeJs[FNCState](previousState.get).right.get
 
-        val newPromptState = scalaState.currentPrompt match {
+        /*
+        * 1) Try to apply prompt reducer
+        * 2) If prompt state changed, check for prompt completion and copy the state
+        */
+
+        scalaState.currentPrompt match {
           case FoodSearchPrompt(state) =>
-            decodeJs(action)(FoodSearchReducer.reduxActionDecoder)
-              .toOption
-              .map(FoodSearchReducer.reducerImpl(state, _))
-              .getOrElse(state)
+            FoodSearchReducer.applyToJsAction(state, action) match {
+              case Some(newPromptState) =>
+                if (newPromptState.selectedFood.isDefined) {
+                  // next prompt
+                }
+
+
+            }
         }
 
-        val withNewPromptState = scalaState.copy(currentPrompt = FoodSearchPrompt(newPromptState))
+        val withNewPromptState = scalaState.copy(currentPrompt = newPromptState)
 
         val newFncState = decodeJs(action)(actionDecoder).toOption match {
           case Some(fncAction) =>

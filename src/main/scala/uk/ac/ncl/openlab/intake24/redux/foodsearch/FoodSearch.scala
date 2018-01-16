@@ -1,8 +1,8 @@
 package uk.ac.ncl.openlab.intake24.redux.foodsearch
 
 import io.circe.generic.auto._
-
 import uk.ac.ncl.openlab.intake24.api.client.roshttp.user.FoodDataImpl
+import uk.ac.ncl.openlab.intake24.api.data.UserFoodHeader
 import uk.ac.ncl.openlab.intake24.redux.api.Client
 import uk.ac.ncl.openlab.intake24.redux.{ApiUtils, ModuleStore, Store}
 
@@ -25,5 +25,15 @@ class FoodSearch(val reduxStore: Store, val clientStore: Client, val selector: j
     }
 
     dispatch(FoodSearchStarted(description))
+  }
+
+  @JSExport
+  def select(foodCode: String) = {
+    onComplete(foodDataService.getFoodData("en_GB", foodCode)) {
+      case Right(foodData) => dispatch(FoodDataReceived(foodData))
+      case Left(errorMessage) => dispatch(FoodSearchFailed(errorMessage))
+    }
+
+    dispatch(FoodSelected(foodCode))
   }
 }

@@ -16,4 +16,6 @@ class FoodNutrientsCalculator(val reduxStore: Store, val clientStore: Client, va
   @JSExport
   val foodSearch = new FoodSearch(reduxStore, clientStore, selector.concat(js.Array("currentPrompt", "state")))
 
+  //def selectFood(FoodD)
+
 }
