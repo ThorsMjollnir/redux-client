@@ -2,7 +2,7 @@ package uk.ac.ncl.openlab.intake24.redux.apps
 
 import io.circe.{Decoder, Encoder}
 import io.circe.scalajs._
-import uk.ac.ncl.openlab.intake24.api.data.UserFoodHeader
+import uk.ac.ncl.openlab.intake24.api.data.{FoodDataForSurvey, UserFoodHeader}
 import uk.ac.ncl.openlab.intake24.redux.{Reducer, ReduxSumTypeDecoder, ReduxSumTypeEncoder}
 import uk.ac.ncl.openlab.intake24.redux.foodsearch.{FoodSearchReducer, FoodSearchState}
 
@@ -12,11 +12,24 @@ import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 import io.circe.generic.auto._
 import shapeless._
 
-sealed trait FNCPrompt
+sealed trait FNCPrompt {
+  def applyReducer(action: js.Any): Option[FNCPrompt]
 
-case class FoodSearchPrompt(state: FoodSearchState) extends FNCPrompt
+  def isComplete: Boolean
 
-case class FNCState(selectedFood: Option[UserFoodHeader] = None, currentPrompt: FNCPrompt)
+  def copyResult(fncState: FNCState): FNCState
+}
+
+case class FoodSearchPrompt(state: FoodSearchState) extends FNCPrompt {
+  def applyReducer(action: js.Any): Option[FNCPrompt] =
+    FoodSearchReducer.applyToJsAction(state, action).map(FoodSearchPrompt(_))
+
+  def isComplete = state.selectedFoodData.isDefined
+
+  def copyResult(fncState: FNCState): FNCState = fncState.copy(selectedFoodData = state.selectedFoodData)
+}
+
+case class FNCState(selectedFoodData: Option[FoodDataForSurvey] = None, currentPrompt: FNCPrompt)
 
 @JSExportTopLevel("FNCReducer")
 object FNCReducer {
@@ -32,11 +45,11 @@ object FNCReducer {
     case Whatever => previousState
   }
 
-  def nextPrompt(state: FNCState): Option[Reducer[_, _]] = {
-    if (state.selectedFood.isEmpty)
-      Some(FoodSearchReducer)
+  def nextPrompt(state: FNCState): FNCPrompt = {
+    if (state.selectedFoodData.isEmpty)
+      FoodSearchPrompt(FoodSearchReducer.initialState)
     else
-      None
+      throw new RuntimeException("No prompt available :(")
   }
 
   @JSExport
@@ -45,34 +58,32 @@ object FNCReducer {
       if (previousState.isEmpty)
         initialState.asJsAny
       else {
-        val scalaState = decodeJs[FNCState](previousState.get).right.get
+        var state = decodeJs[FNCState](previousState.get).right.get
+        var stateModified = false
 
-        /*
-        * 1) Try to apply prompt reducer
-        * 2) If prompt state changed, check for prompt completion and copy the state
-        */
+        def updateState(newState: FNCState) = {
+          state = newState
+          stateModified = true
+        }
 
-        scalaState.currentPrompt match {
-          case FoodSearchPrompt(state) =>
-            FoodSearchReducer.applyToJsAction(state, action) match {
-              case Some(newPromptState) =>
-                if (newPromptState.selectedFood.isDefined) {
-                  // next prompt
-                }
-
-
+        state.currentPrompt.applyReducer(action).foreach {
+          updatedPrompt =>
+            if (updatedPrompt.isComplete) {
+              updateState(updatedPrompt.copyResult(state))
+              updateState(state.copy(currentPrompt = nextPrompt(state)))
             }
+            else
+              updateState(state.copy(currentPrompt = updatedPrompt))
         }
 
-        val withNewPromptState = scalaState.copy(currentPrompt = newPromptState)
-
-        val newFncState = decodeJs(action)(actionDecoder).toOption match {
-          case Some(fncAction) =>
-            reducerImpl(withNewPromptState, fncAction)
-          case None =>
-            withNewPromptState
+        decodeJs(action)(actionDecoder).toOption.foreach {
+          fncAction =>
+            updateState(reducerImpl(state, fncAction))
         }
 
-        newFncState.asJsAny
+        if (stateModified)
+          state.asJsAny
+        else
+          previousState
       }
 }

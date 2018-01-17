@@ -10,6 +10,6 @@ case class FoodSearchFailed(errorMessage: String) extends FoodSearchAction
 
 case class FoodSearchStarted(query: String) extends FoodSearchAction
 
-case class FoodSelected(code: String) extends FoodSearchAction
+case class FoodSearchResultSelected(code: String) extends FoodSearchAction
 
-case class FoodDataReceived(data: FoodDataForSurvey) extends FoodSearchAction
+case class FoodSearchDataReceived(data: FoodDataForSurvey) extends FoodSearchAction

@@ -7,7 +7,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import io.circe.generic.auto._
 
 case class FoodSearchState(query: String, requestPending: Boolean, result: LookupResult,
-                           selectedFood: Option[FoodDataForSurvey], errors: Seq[String])
+                           selectedFoodData: Option[FoodDataForSurvey], errors: Seq[String])
 
 @JSExportTopLevel("FoodSearchReducer")
 object FoodSearchReducer extends Reducer[FoodSearchState, FoodSearchAction] {
@@ -24,10 +24,10 @@ object FoodSearchReducer extends Reducer[FoodSearchState, FoodSearchAction] {
     case FoodSearchFailed(errorMessage) =>
       previousState.copy(requestPending = false, errors = errorMessage +: previousState.errors)
 
-    case FoodSelected(_) =>
+    case FoodSearchResultSelected(_) =>
       previousState.copy(requestPending = true)
 
-    case FoodDataReceived(data) =>
-      previousState.copy(requestPending = false, selectedFood = Some(data))
+    case FoodSearchDataReceived(data) =>
+      previousState.copy(requestPending = false, selectedFoodData = Some(data))
   }
 }

@@ -30,10 +30,10 @@ class FoodSearch(val reduxStore: Store, val clientStore: Client, val selector: j
   @JSExport
   def select(foodCode: String) = {
     onComplete(foodDataService.getFoodData("en_GB", foodCode)) {
-      case Right(foodData) => dispatch(FoodDataReceived(foodData))
+      case Right(foodData) => dispatch(FoodSearchDataReceived(foodData))
       case Left(errorMessage) => dispatch(FoodSearchFailed(errorMessage))
     }
 
-    dispatch(FoodSelected(foodCode))
+    dispatch(FoodSearchResultSelected(foodCode))
   }
 }
