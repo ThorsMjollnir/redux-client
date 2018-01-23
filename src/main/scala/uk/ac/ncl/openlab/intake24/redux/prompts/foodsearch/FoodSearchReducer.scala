@@ -1,4 +1,4 @@
-package uk.ac.ncl.openlab.intake24.redux.foodsearch
+package uk.ac.ncl.openlab.intake24.redux.prompts.foodsearch
 
 import uk.ac.ncl.openlab.intake24.api.data.{FoodDataForSurvey, LookupResult}
 import uk.ac.ncl.openlab.intake24.redux.Reducer

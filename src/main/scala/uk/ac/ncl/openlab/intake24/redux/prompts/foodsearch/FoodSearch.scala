@@ -1,4 +1,4 @@
-package uk.ac.ncl.openlab.intake24.redux.foodsearch
+package uk.ac.ncl.openlab.intake24.redux.prompts.foodsearch
 
 import io.circe.generic.auto._
 import uk.ac.ncl.openlab.intake24.api.client.roshttp.user.FoodDataImpl
