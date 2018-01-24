@@ -6,7 +6,7 @@ import uk.ac.ncl.openlab.intake24.redux.Reducer
 import scala.scalajs.js.annotation.JSExportTopLevel
 import io.circe.generic.auto._
 
-case class FoodSearchState(query: String, requestPending: Boolean, result: LookupResult,
+case class FoodSearchState(query: String, requestPending: Boolean, searchResult: LookupResult,
                            selectedFoodData: Option[FoodDataForSurvey], errors: Seq[String])
 
 @JSExportTopLevel("FoodSearchReducer")
@@ -19,7 +19,7 @@ object FoodSearchReducer extends Reducer[FoodSearchState, FoodSearchAction] {
       previousState.copy(query = query, requestPending = true)
 
     case FoodSearchSuccessful(result) =>
-      previousState.copy(requestPending = false, result = result)
+      previousState.copy(requestPending = false, searchResult = result)
 
     case FoodSearchFailed(errorMessage) =>
       previousState.copy(requestPending = false, errors = errorMessage +: previousState.errors)

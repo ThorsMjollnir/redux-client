@@ -69,12 +69,12 @@ packageForNpm := {
 
   IO.copyFile(jsFile, npmTarget / jsFileName, CopyOptions(true, false, false))
 
-  /* log.info("Copying TypeScript definitions...")
+  log.info("Copying TypeScript definitions...")
 
   val dtsFileName = "intake24-redux-client.d.ts"
   val dtsFile = sourceDirectory.value / "main" / "typescript" / dtsFileName
 
-  IO.copyFile(dtsFile, npmTarget / dtsFileName, CopyOptions(true, false, false)) */
+  IO.copyFile(dtsFile, npmTarget / dtsFileName, CopyOptions(true, false, false))
 
   log.info("Attempting to run 'npm install' (to enable local development)...")
 
