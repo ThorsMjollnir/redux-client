@@ -1,100 +1,100 @@
-import {Store} from "redux";
+import {Store, Reducer} from "redux";
 
 export interface ClientState {
-    apiBaseUrl?: string;
-    refreshToken?: string;
-    accessToken?: string;
-    signinRequestPending: boolean;
-    errors: string[];
+  apiBaseUrl?: string;
+  refreshToken?: string;
+  accessToken?: string;
+  signinRequestPending: boolean;
+  errors: string[];
 }
 
 export class Client {
-    constructor(reduxStore: Store<any>, stateSelector: string[]);
+  constructor(reduxStore: Store<any>, stateSelector: string[]);
 
-    setApiBaseUrl(apiBaseUrl: string);
+  setApiBaseUrl(apiBaseUrl: string);
 
-    setRefreshToken(token: string);
+  setRefreshToken(token: string);
 
-    signin(email: string, password: string);
+  signin(email: string, password: string);
 
-    refreshAccessToken();
+  refreshAccessToken();
 
-    getState(): ClientState;
+  getState(): ClientState;
 }
 
 export class ClientReducer {
 
-    static create();
+  static create(): Reducer<ClientState>;
 }
 
 export class FNCReducer {
 
-    static create();
+  static create();
 }
 
 export interface FoodHeader {
-    code: string;
-    localDescription: string;
+  code: string;
+  localDescription: string;
 }
 
 export interface CategoryHeader {
-    code: string;
-    localDescription: string;
+  code: string;
+  localDescription: string;
 }
 
 export interface LookupResult {
-    foods: FoodHeader[],
-    categories: CategoryHeader[];
+  foods: FoodHeader[],
+  categories: CategoryHeader[];
 }
 
 export interface FoodSearchState {
-    requestPending: boolean;
-    searchResult: LookupResult;
+  requestPending: boolean;
+  searchResult: LookupResult;
 }
 
 export class FoodSearch {
-    constructor(reduxStore: Store<any>, apiClient: Client, stateSelector: string[]);
+  constructor(reduxStore: Store<any>, apiClient: Client, stateSelector: string[]);
 
-    search(query: string);
+  search(query: string);
 
-    select(foodCode: string);
+  select(foodCode: string);
 
-    getState(): FoodSearchState;
+  getState(): FoodSearchState;
 }
 
 export class FoodSearchReducer {
-    static create();
+  static create();
 }
 
 export interface PortionSizeMethod {
-    method: string;
-    description: string;
-    imageUrl: string;
-    useForRecipes: boolean;
-    parameters: object
+  method: string;
+  description: string;
+  imageUrl: string;
+  useForRecipes: boolean;
+  parameters: object
 }
 
 export interface MethodSelectorState {
-    availableMethods: PortionSizeMethod[],
-    selectedIndex?: number
+  availableMethods: PortionSizeMethod[],
+  selectedIndex?: number
 }
 
 export interface MethodSelector {
-    selectMethod(index: number): void;
+  selectMethod(index: number): void;
 
-    getState(): MethodSelectorState;
+  getState(): MethodSelectorState;
 }
 
 export interface FoodNutrientsCalculatorState {
-    currentPrompt: { type: string }
+  currentPrompt: { type: string }
 }
 
 export class FoodNutrientsCalculator {
-    constructor(reduxStore: Store<any>, apiClient: Client, stateSelector: string[]);
+  constructor(reduxStore: Store<any>, apiClient: Client, stateSelector: string[]);
 
-    foodSearch: FoodSearch;
+  foodSearch: FoodSearch;
 
-    methodSelector: MethodSelector;
+  methodSelector: MethodSelector;
 
-    getState(): FoodNutrientsCalculatorState;
+  getState(): FoodNutrientsCalculatorState;
 }

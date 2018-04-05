@@ -1,5 +1,6 @@
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import complete.DefaultParsers._
 
 enablePlugins(ScalaJSPlugin)
 
@@ -27,9 +28,13 @@ libraryDependencies ++= Seq(
   "uk.ac.ncl.openlab.intake24" %%% "api-client" % "1.0.0-SNAPSHOT",
 )
 
-val packageForNpm = TaskKey[Unit]("packageForNpm", "Package final JavaScript as NPM module")
+val packageForNpm = inputKey[Unit]("Package compiled JavaScript as NPM module")
+
+val rootFile = if (System.getProperty("os.name").contains("Windows")) new File("C:\\") else new File("/")
 
 packageForNpm := {
+
+  val targetArgument = fileParser(rootFile).?.parsed
 
   val log = streams.value.log
   val jsFile = (fastOptJS in Compile).value.data
@@ -41,7 +46,16 @@ packageForNpm := {
 
   log.info("Building NPM module...")
 
-  val npmTarget = target.value / "npm"
+
+  val npmTarget = targetArgument match {
+    case Some(dir) =>
+      dir.mkdirs()
+      log.info(s"Publishing modules files to $dir")
+      dir
+    case None =>
+      log.info(s"Output directory not specified, defaulting to target/npm")
+      target.value / "npm"
+  }
 
   log.info("Writing package.json...")
 
